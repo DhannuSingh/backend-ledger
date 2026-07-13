@@ -2,6 +2,7 @@ const transactionModel = require('../models/transaction.model')
 const ledgerModel = require('../models/ledger.model')
 const accountModel = require('../models/account.model')
 const emailService = require('../services/email.service')
+const mongoose = require('mongoose')
 
 /**
  * - Create a new transaction
@@ -101,4 +102,39 @@ async function createTransaction(req, res) {
     })
   }
 
+  /**
+   * 5. Create transaction (PENDING)
+   */
+  const session = await mongoose.mongoose.startSession()
+  session.startTransaction()
+
+  const transaction = await transactionModel.create({
+    fromAccount,
+    toAccount,
+    amount,
+    idempotencykey,
+    status: "PENDING"
+  }, { session })
+
+  const debitLedgerEntry = await ledgerModel.create({
+    account: fromAccount,
+    amount: amount,
+    transaction: transaction._id,
+    type: "DEBIT"
+  }, { session })
+
+  const creditLedgerEntry = await ledgerModel.create({
+    account: toAccount,
+    amount: amount,
+    transaction: transaction._id,
+    type: "CREDIT"
+  }, { session })
+
+   transaction.status = "COMPLETED"
+   await transaction.save({ session })
+
+
+   await session.commitTransaction()
+   session.endSession()
+   
 }
