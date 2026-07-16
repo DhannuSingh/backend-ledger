@@ -1,20 +1,31 @@
-const accountModel = require('../models/account.model')
+const accountModel = require("../models/account.model");
 
 
 async function createAccountController(req, res) {
-  
-  const user = req.user;
 
-  const account = await accountModel.create({
-    user: user._id
-  })
+    const user = req.user;
 
-  res.status(201).json({
-    account
-  })
+    const account = await accountModel.create({
+        user: user._id
+    })
+
+    res.status(201).json({
+        account
+    })
+
+}
+
+async function getUserAccountsController(req, res) {
+
+    const accounts = await accountModel.find({ user: req.user._id });
+
+    res.status(200).json({
+        accounts
+    })
 }
 
 
 module.exports = {
-  createAccountController
+    createAccountController,
+    getUserAccountsController
 }
